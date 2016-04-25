@@ -1,7 +1,7 @@
 import string
 from collections import namedtuple
 from enum import Enum
-from math import sqrt, cos, acos
+from math import sqrt, cos, acos, floor
 
 
 class TspType(Enum):
@@ -102,7 +102,7 @@ class TspFile:
             q1 = cos(lon - next_lon)
             q2 = cos(lat - next_lat)
             q3 = cos(lat + next_lat)
-            dist += round(rrr * acos(.5 * ((1. + q1) * q2 - (1. - q1) * q3)) + 1)
+            dist += floor(rrr * acos(.5 * ((1. + q1) * q2 - (1. - q1) * q3)) + 1)
 
         return dist
 
