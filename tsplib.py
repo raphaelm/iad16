@@ -1,6 +1,7 @@
 import string
 from collections import namedtuple
 from enum import Enum
+from math import sqrt, cos, acos
 
 
 class TspType(Enum):
@@ -77,6 +78,54 @@ class TspFile:
     def __init__(self):
         self.nodes = []
         self.tours = []
+
+    def length(self, tour):
+        if self.EDGE_WEIGHT_TYPE == EdgeWeightType.EUC_2D:
+            return self._length_euc2d(tour)
+        if self.EDGE_WEIGHT_TYPE == EdgeWeightType.GEO:
+            return self._length_geo(tour)
+        else:
+            raise ValueError('Distance function "{}" is not yet implemented'.format(self.EDGE_WEIGHT_TYPE))
+
+    def _length_geo(self, tour):
+        dist = 0
+        mod = len(tour)
+        rrr = 6378.388
+
+        for i, pos in enumerate(tour):
+            node = self.nodes[pos - 1]
+            next_node = self.nodes[tour[(i + 1) % mod] - 1]
+
+            lat, lon = self._latlon(node)
+            next_lat, next_lon = self._latlon(next_node)
+
+            q1 = cos(lon - next_lon)
+            q2 = cos(lat - next_lat)
+            q3 = cos(lat + next_lat)
+            dist += round(rrr * acos(.5 * ((1. + q1) * q2 - (1. - q1) * q3)) + 1)
+
+        return dist
+
+    def _latlon(self, node):
+        pi = 3.141592
+        deg = round(node.x)
+        minutes = node.x - deg
+        lat = pi * (deg + 5. * minutes / 3.) / 180.
+        deg = round(node.y)
+        minutes = node.y - deg
+        lon = pi * (deg + 5. * minutes / 3.) / 180.
+        return lat, lon
+
+    def _length_euc2d(self, tour):
+        dist = 0
+        mod = len(tour)
+        for i, pos in enumerate(tour):
+            node = self.nodes[pos - 1]
+            next_node = self.nodes[tour[(i + 1) % mod] - 1]
+            xd = node.x - next_node.x
+            yd = node.y - next_node.y
+            dist += round(sqrt(xd ** 2 + yd ** 2))
+        return dist
 
     def _parse_specification_line(self, key, value):
         if key in ('DIMENSION', 'CAPACITY'):

@@ -27,3 +27,4 @@ def test_read_tour_file():
     assert len(tsp.tours[0]) == 96
     assert tsp.tours[0][:5] == [29, 2, 3, 4, 5]
     assert tsp.tours[0][-5:] == [36, 32, 31, 30, 1]
+
