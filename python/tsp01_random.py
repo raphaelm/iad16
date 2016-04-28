@@ -1,15 +1,15 @@
-import random
 import sys
+import numpy as np
 
 import tsplib
-import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 
 
-def generate_random_tour(prob):
-    nodes = [node.num for node in prob.nodes]
-    random.shuffle(nodes)
-    return nodes
+def generate_random_tours(problem, n=100):
+    nodes = np.array([node.num for node in problem.nodes])
+    for i in range(n):
+        np.random.shuffle(nodes)
+        yield nodes
 
 
 with open(sys.argv[1]) as f:
@@ -17,8 +17,7 @@ with open(sys.argv[1]) as f:
 
 
 lengths = []
-for i in range(100000):
-    tour = generate_random_tour(prob)
+for tour in generate_random_tours(prob, 10000):
     length = prob.length(tour)
     lengths.append(length)
 
