@@ -95,7 +95,6 @@ class TspFile:
         for i, pos in enumerate(tour):
             node = self.nodes[pos - 1]
             next_node = self.nodes[tour[(i + 1) % mod] - 1]
-            print(node, next_node)
 
             lat, lon = self._latlon(node)
             next_lat, next_lon = self._latlon(next_node)
