@@ -108,10 +108,10 @@ class TspFile:
 
     def _latlon(self, node):
         pi = 3.141592
-        deg = round(node.x)
+        deg = int(node.x)
         minutes = node.x - deg
         lat = pi * (deg + 5. * minutes / 3.) / 180.
-        deg = round(node.y)
+        deg = int(node.y)
         minutes = node.y - deg
         lon = pi * (deg + 5. * minutes / 3.) / 180.
         return lat, lon
