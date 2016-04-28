@@ -2,6 +2,7 @@ import string
 from collections import namedtuple
 from enum import Enum
 from math import sqrt, cos, acos, floor
+import numpy as np
 
 
 class TspType(Enum):
@@ -63,6 +64,31 @@ Node2D = namedtuple('Node2D', ('num', 'x', 'y'))
 Node3D = namedtuple('Node3D', ('num', 'x', 'y', 'z'))
 
 
+def _node_pairs_from_list(tour, nodelist):
+    mod = len(tour)
+    for i, pos in enumerate(tour):
+        node = nodelist[pos - 1]
+        next_node = nodelist[tour[(i + 1) % mod] - 1]
+        yield node, next_node
+
+
+def _node_coords(nodes):
+    return
+
+
+def _latlon(coordarray):
+    pi = 3.141592
+    x = coordarray[:,0]
+    y = coordarray[:,1]
+    deg = x.astype(int)
+    minutes = x - deg
+    lat = pi * (deg + 5. * minutes / 3.) / 180.
+    deg = y.astype(int)
+    minutes = y - deg
+    lon = pi * (deg + 5. * minutes / 3.) / 180.
+    return np.transpose(np.array([lat, lon]))
+
+
 class TspFile:
     NAME = None
     TYPE = None
@@ -88,40 +114,22 @@ class TspFile:
             raise ValueError('Distance function "{}" is not yet implemented'.format(self.EDGE_WEIGHT_TYPE))
 
     def _length_geo(self, tour):
-        dist = 0
-        mod = len(tour)
         rrr = 6378.388
+        nodes = [(self.nodes[t-1].x, self.nodes[t-1].y) for t in tour]
+        coords = _latlon(np.array(nodes))
+        next_coords = np.roll(coords, 1, axis=0)
 
-        for i, pos in enumerate(tour):
-            node = self.nodes[pos - 1]
-            next_node = self.nodes[tour[(i + 1) % mod] - 1]
+        q1 = np.cos(coords[:,1] - next_coords[:,1])
+        q2 = np.cos(coords[:,0] - next_coords[:,0])
+        q3 = np.cos(coords[:,0] + next_coords[:,0])
 
-            lat, lon = self._latlon(node)
-            next_lat, next_lon = self._latlon(next_node)
-
-            q1 = cos(lon - next_lon)
-            q2 = cos(lat - next_lat)
-            q3 = cos(lat + next_lat)
-            dist += int(rrr * acos(.5 * ((1. + q1) * q2 - (1. - q1) * q3)) + 1)
+        dist = np.sum((rrr * np.arccos(.5 * ((1. + q1) * q2 - (1. - q1) * q3)) + 1).astype(int))
 
         return dist
 
-    def _latlon(self, node):
-        pi = 3.141592
-        deg = int(node.x)
-        minutes = node.x - deg
-        lat = pi * (deg + 5. * minutes / 3.) / 180.
-        deg = int(node.y)
-        minutes = node.y - deg
-        lon = pi * (deg + 5. * minutes / 3.) / 180.
-        return lat, lon
-
     def _length_euc2d(self, tour):
         dist = 0
-        mod = len(tour)
-        for i, pos in enumerate(tour):
-            node = self.nodes[pos - 1]
-            next_node = self.nodes[tour[(i + 1) % mod] - 1]
+        for node, next_node in _node_pairs_from_list(tour, self.nodes):
             xd = node.x - next_node.x
             yd = node.y - next_node.y
             dist += round(sqrt(xd ** 2 + yd ** 2))
