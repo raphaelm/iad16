@@ -115,8 +115,9 @@ class TspFile:
 
     def _length_geo(self, tour):
         rrr = 6378.388
-        nodes = [(self.nodes[t-1].x, self.nodes[t-1].y) for t in tour]
-        coords = _latlon(np.array(nodes))
+        if not hasattr(self, '_cached_latlon'):
+            self._cached_latlon = _latlon(np.array([(n.x, n.y) for n in self.nodes]))
+        coords = np.take(self._cached_latlon, np.array(tour) - 1, axis=0)
         next_coords = np.roll(coords, 1, axis=0)
 
         q1 = np.cos(coords[:,1] - next_coords[:,1])
