@@ -1,0 +1,6 @@
+[package]
+name = "tsplib"
+version = "0.1.0"
+authors = ["Raphael Michel <mail@raphaelmichel.de>"]
+
+[dependencies]

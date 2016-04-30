@@ -4,6 +4,9 @@ use std::io::BufReader;
 use std::fs::File;
 use std::path::Path;
 
+#[cfg(test)]
+mod tests;
+
 #[derive(PartialEq)]
 pub enum EdgeWeightTypes {
 	Euc2D,
