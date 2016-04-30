@@ -7,25 +7,71 @@ use std::path::Path;
 #[cfg(test)]
 mod tests;
 
+/// The different types of distance functions supported by this implementation.
+///
+/// TSPLIB does document more functions, but for our purpose we'll only need the
+/// following three
 #[derive(PartialEq)]
 pub enum EdgeWeightTypes {
+	/// Two-dimensional euclidian metric
 	Euc2D,
+	/// Three-dimensional euclidian metric
 	Euc3D,
+	/// Geo-coordinate metric based on an idealized spherical world 
 	Geo
 }
 
+/// The type we use for the different nodes of our problem graph
 pub enum Node {
-	Node2D { num: i32, x: f64, y: f64 },
-	Node3D { num: i32, x: f64, y: f64, z: f64 },
-	NodeGeo { num: i32, lat: f64, lon: f64, x: f64, y: f64 }
+	/// Node in a 2D cartesian coordinate system
+	Node2D { 
+		/// The node number (for tour definitions)
+		num: i32, 
+		/// The x coordinate
+		x: f64, 
+		/// The y coordinate
+		y: f64 
+	},
+	/// Node in a 3D cartesian coordinate system
+	Node3D { 
+		/// The node number (for tour definitions)
+		num: i32, 
+		/// The x coordinate
+		x: f64, 
+		/// The y coordinate
+		y: f64, 
+		/// The z coordinate
+		z: f64 
+	},
+	/// Node in a geological coordinate system
+	NodeGeo { 
+		/// The node number (for tour definitions)
+		num: i32, 
+		/// The nodes latitude in decimal radians
+		lat: f64, 
+		/// The nodes longitude in decimal radians
+		lon: f64, 
+		/// The latitude in the format of the original TSPLIB file
+		x: f64, 
+		/// The longitude in the format of the original TSPLIB file
+		y: f64 
+	}
 }
 
+/// Represents a file from the TSPLIB dataset
+///
+/// This currently only implements the parts of the dataset that
+/// we need for our purpose and is no complete representation of the file.
 pub struct TSPFile {
-	pub edge_weight_type: EdgeWeightTypes, 
+	/// The distance function to be used
+	pub edge_weight_type: EdgeWeightTypes,
+	/// A list of nodes of the problem
 	pub nodes: Vec<Node>,
+	/// A list of tours specified in the file
 	pub tours: Vec<Vec<i32>>
 }
 
+/// A result of a parser call, can either be an error or a TSPFile
 pub type TSPFileResult = Result<TSPFile, io::Error>;
 
 #[derive(PartialEq)]
@@ -36,6 +82,11 @@ enum ParserState {
 	Tours
 }
 
+/// Calculates the distance between two nodes using the Euclidian norm
+///
+/// # Panics
+/// This will panic if you call it on nodes that are not specified on
+/// a 2d cartesian coordinate system.
 pub fn dist_euc2d (n1: &Node, n2: &Node) -> i32 {
 	if let &Node::Node2D{x: x1, y: y1, ..} = n1 {
 		if let &Node::Node2D{x: x2, y: y2, ..} = n2 {
@@ -45,6 +96,11 @@ pub fn dist_euc2d (n1: &Node, n2: &Node) -> i32 {
 	panic!("Invalid");
 }
 
+/// Calculates the distance between two nodes using the Euclidian norm
+///
+/// # Panics
+/// This will panic if you call it on nodes that are not specified on
+/// a 3d cartesian coordinate system.
 pub fn dist_euc3d (n1: &Node, n2: &Node) -> i32 {
 	if let &Node::Node3D{x: x1, y: y1, z: z1, ..} = n1 {
 		if let &Node::Node3D{x: x2, y: y2, z: z2, ..} = n2 {
@@ -54,6 +110,11 @@ pub fn dist_euc3d (n1: &Node, n2: &Node) -> i32 {
 	panic!("Invalid");
 }
 
+/// Calculates the distance between two nodes using the geo distance algorithm from TSPLIB
+///
+/// # Panics
+/// This will panic if you call it on nodes that are not specified on
+/// a geo-based coordinate system.
 pub fn dist_geo (n1: &Node, n2: &Node) -> i32 {
 	let rrr = 6378.388;
 	if let &Node::NodeGeo{lat: lat1, lon: lon1, ..} = n1 {
@@ -68,7 +129,12 @@ pub fn dist_geo (n1: &Node, n2: &Node) -> i32 {
 	panic!("Invalid");
 }
 
-pub fn calculate_length (prob: &TSPFile, tour: &Vec<i32>) -> i32 {
+/// Calculates the length of a tour on a given problem set.
+///
+/// ``prob`` should be the ``TSPFile`` that contains the node definitions, ``tour``
+/// should be a vector containing node numbers in the order in which they are
+/// visited.
+pub fn tour_length (prob: &TSPFile, tour: &Vec<i32>) -> i32 {
 	let dist: fn(&Node, &Node) -> i32 = match prob.edge_weight_type {
 		EdgeWeightTypes::Euc2D => dist_euc2d,
 		EdgeWeightTypes::Euc3D => dist_euc3d,
@@ -84,6 +150,7 @@ pub fn calculate_length (prob: &TSPFile, tour: &Vec<i32>) -> i32 {
 	d
 }
 
+/// Utility function to create a node with lat/lon values based on x/y values from TSPLIB file
 pub fn make_geo_node (num: i32, x: f64, y: f64) -> Node {
 	let pi = 3.141592;
 	let deg = (x as i32) as f64;
@@ -97,6 +164,15 @@ pub fn make_geo_node (num: i32, x: f64, y: f64) -> Node {
 	}
 }
 
+/// Parse a TSPLIB file into its ``TSPFile`` representation
+///
+/// # Panics
+/// * if the problem uses an edge weight type or a coordinate system that is not supported
+///   by this implementation
+/// * if the file contains a data section that is not supported by this implementation
+///
+/// # Error
+/// Returns an ``io::Error`` if the file could not be read
 pub fn parse_file (path: &Path) -> TSPFileResult {
 	let f = try!(File::open(&path));
 	let reader = BufReader::new(f);
