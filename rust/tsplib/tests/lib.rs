@@ -2,6 +2,7 @@ extern crate tsplib;
 
 use tsplib::EdgeWeightTypes;
 use tsplib::parse_file;
+use tsplib::calculate_length;
 use std::path::Path;
 
 #[test]
@@ -42,4 +43,22 @@ fn test_parse_pcb442_tour() {
 	let tspf = res.unwrap();
 	assert!(tspf.tours.len() == 1);
 	assert!(tspf.tours[0].len() == 442);
+}
+
+#[test]
+fn test_len_pcb442() {
+	let path = Path::new("../../data/pcb442.tsp");
+	let prob = parse_file(path).unwrap();
+	let path = Path::new("../../data/pcb442.opt.tour");
+	let tourfile = parse_file(path).unwrap();
+	assert!(calculate_length(&prob, &tourfile.tours[0]) == 50778);
+}
+
+#[test]
+fn test_len_gr96() {
+	let path = Path::new("../../data/gr96.tsp");
+	let prob = parse_file(path).unwrap();
+	let path = Path::new("../../data/gr96.opt.tour");
+	let tourfile = parse_file(path).unwrap();
+	assert!(calculate_length(&prob, &tourfile.tours[0]) == 55209);
 }

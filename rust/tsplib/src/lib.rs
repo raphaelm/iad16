@@ -36,6 +36,54 @@ enum ParserState {
 	Tours
 }
 
+pub fn dist_euc2d (n1: &Node, n2: &Node) -> i32 {
+	if let &Node::Node2D{x: x1, y: y1, ..} = n1 {
+		if let &Node::Node2D{x: x2, y: y2, ..} = n2 {
+			return ((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2)).sqrt().round() as i32;
+		}
+	}
+	panic!("Invalid");
+}
+
+pub fn dist_euc3d (n1: &Node, n2: &Node) -> i32 {
+	if let &Node::Node3D{x: x1, y: y1, z: z1, ..} = n1 {
+		if let &Node::Node3D{x: x2, y: y2, z: z2, ..} = n2 {
+			return ((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) + (z1-z2)*(z1-z2)).sqrt().round() as i32;
+		}
+	}
+	panic!("Invalid");
+}
+
+pub fn dist_geo (n1: &Node, n2: &Node) -> i32 {
+	let rrr = 6378.388;
+	if let &Node::NodeGeo{lat: lat1, lon: lon1, ..} = n1 {
+		if let &Node::NodeGeo{lat: lat2, lon: lon2, ..} = n2 {
+			let q1 = (lon1 - lon2).cos();
+			let q2 = (lat1 - lat2).cos();
+			let q3 = (lat1 + lat2).cos();
+
+			return (rrr * (0.5 * ((1.0 + q1) * q2 - (1.0 - q1) * q3)).acos() + 1.0) as i32;
+		}
+	}
+	panic!("Invalid");
+}
+
+pub fn calculate_length (prob: &TSPFile, tour: &Vec<i32>) -> i32 {
+	let dist: fn(&Node, &Node) -> i32 = match prob.edge_weight_type {
+		EdgeWeightTypes::Euc2D => dist_euc2d,
+		EdgeWeightTypes::Euc3D => dist_euc3d,
+		EdgeWeightTypes::Geo => dist_geo,
+	};
+	let len = tour.len();
+	let mut d: i32 = 0;
+	for i in 0..len {
+		let node = &prob.nodes[(tour[i] as usize) - 1];
+		let next_node = &prob.nodes[(tour[(i + 1) % len] as usize) - 1];
+		d = d + dist(&node, &next_node);
+	}
+	d
+}
+
 pub fn make_geo_node (num: i32, x: f64, y: f64) -> Node {
 	let pi = 3.141592;
 	let deg = (x as i32) as f64;
@@ -74,14 +122,11 @@ pub fn parse_file (path: &Path) -> TSPFileResult {
 				let key = res[0].trim();
 				let val = res[1].trim();
 				if key == "EDGE_WEIGHT_TYPE" {
-					if val == "GEO" {
-						result.edge_weight_type = EdgeWeightTypes::Geo;
-					} else if val == "EUC_2D" {
-						result.edge_weight_type = EdgeWeightTypes::Euc2D;
-					} else if val == "EUC_3D" {
-						result.edge_weight_type = EdgeWeightTypes::Euc3D;
-					} else {
-						panic!("Unsupported edge weight type");
+					result.edge_weight_type = match val {
+						"GEO" => EdgeWeightTypes::Geo,
+						"EUC_2D" => EdgeWeightTypes::Euc2D,
+						"EUC_3D" => EdgeWeightTypes::Euc3D,
+						_ => panic!("Unsupported edge weight type")
 					}
 				}
 				continue;
