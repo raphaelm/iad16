@@ -185,7 +185,7 @@ pub fn parse_file (path: &Path) -> TSPFileResult {
 	// read a line into buffer
 	let mut parser_state = ParserState::Specification;
 	for line in reader.lines().filter_map(|result| result.ok()) {
-		if line.len() == 0 {
+		if line.trim().len() == 0 {
 			continue;
 		}
 		if line.trim() == "EOF" {
@@ -253,7 +253,7 @@ pub fn parse_file (path: &Path) -> TSPFileResult {
 				result.tours[index].push(node);
 			}
 		} else {
-			panic!("Invalid parser state");
+			panic!("Invalid parser state at line: '{}'", line);
 		}
 	}
 
