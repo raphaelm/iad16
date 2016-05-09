@@ -23,5 +23,4 @@ fn main() {
 		let tour = make_random_tour(tspf.nodes.len() as i32);
 		lens.push(tour_length(&tspf, &tour));
 	}
-	println!("Hello world");
 }

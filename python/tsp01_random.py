@@ -17,7 +17,7 @@ with open(sys.argv[1]) as f:
 
 
 lengths = []
-for tour in generate_random_tours(prob, 10000):
+for tour in generate_random_tours(prob, 1000000):
     length = prob.length(tour)
     lengths.append(length)
 
@@ -27,7 +27,7 @@ n, bins, patches = plt.hist(lengths, 50, facecolor='green')
 
 plt.xlabel('Random tour length')
 plt.ylabel('Number of tours')
-plt.title('Random tours for {}'.format(prob.NAME))
+plt.title("1'000'000 Random tours for {}".format(prob.NAME))
 plt.grid(True)
 
-plt.show()
+plt.savefig(sys.argv[2])
