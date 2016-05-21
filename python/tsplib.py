@@ -1,8 +1,9 @@
 import string
 from collections import namedtuple
 from enum import Enum
-from math import sqrt, cos, acos, floor
+from math import sqrt
 import numpy as np
+import re
 
 
 class TspType(Enum):
@@ -105,6 +106,14 @@ class TspFile:
         self.nodes = []
         self.tours = []
 
+    def dist(self, node1, node2):
+        if self.EDGE_WEIGHT_TYPE == EdgeWeightType.EUC_2D:
+            return self._dist_euc2d(node1, node2)
+        if self.EDGE_WEIGHT_TYPE == EdgeWeightType.GEO:
+            return self._dist_geo(node1, node2)
+        else:
+            raise ValueError('Distance function "{}" is not yet implemented'.format(self.EDGE_WEIGHT_TYPE))
+
     def length(self, tour):
         if self.EDGE_WEIGHT_TYPE == EdgeWeightType.EUC_2D:
             return self._length_euc2d(tour)
@@ -136,6 +145,21 @@ class TspFile:
             dist += round(sqrt(xd ** 2 + yd ** 2))
         return dist
 
+    def _dist_euc2d(self, node1, node2):
+        xd = node1.x - node2.x
+        yd = node1.y - node2.y
+        return round(sqrt(xd ** 2 + yd ** 2))
+
+    def _dist_geo(self, node1, node2):
+        rrr = 6378.388
+        latlon = _latlon(np.array([(node1.x, node1.y), (node2.x, node2.y)]))
+
+        q1 = np.cos(latlon[0,1] - latlon[1,1])
+        q2 = np.cos(latlon[0,0] - latlon[1,0])
+        q3 = np.cos(latlon[0,0] + latlon[1,0])
+
+        return int(rrr * np.arccos(.5 * ((1. + q1) * q2 - (1. - q1) * q3)) + 1)
+
     def _parse_specification_line(self, key, value):
         if key in ('DIMENSION', 'CAPACITY'):
             value = int(value)
@@ -164,6 +188,8 @@ class TspFile:
             line = line.strip()
             if line == 'EOF':
                 break
+            if not line:
+                continue
 
             if parser_state == 'specification':
                 if ':' in line:
@@ -184,7 +210,7 @@ class TspFile:
             else:
                 # This is data content
                 if parser_state == 'nodes':
-                    parts = line.split(' ')
+                    parts = re.sub('\s+', ' ', line).split(' ')
                     if len(parts) == 4:
                         node = Node3D(num=int(parts[0]), x=float(parts[1]), y=float(parts[2]), z=float(parts[3]))
                     elif len(parts) == 3:

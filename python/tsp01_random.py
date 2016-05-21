@@ -21,7 +21,6 @@ for tour in generate_random_tours(prob, 1000000):
     length = prob.length(tour)
     lengths.append(length)
 
-
 # the histogram of the data
 n, bins, patches = plt.hist(lengths, 50, facecolor='green')
 
