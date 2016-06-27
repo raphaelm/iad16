@@ -2,6 +2,7 @@ import sys
 
 import tsplib
 from tsp02a_nextneighbor import next_neighbor_tour
+from tsp03_spacefilling import spacefilling_tour
 
 
 class NodeLink:
@@ -194,8 +195,17 @@ if __name__ == "__main__":
     with open(sys.argv[1]) as f:
         prob = tsplib.TspFile.create_from_file(f)
 
-    tour = next_neighbor_tour(prob, 1)
-    tour = modifications(prob, tour, heuristic=modify_2opt)
-    tour = modifications(prob, tour, heuristic=modify_node_insertion)
+    if sys.argv[2] == 'neighbor':
+        tour = next_neighbor_tour(prob, 1)
+    elif sys.argv[2] == 'space':
+        tour = spacefilling_tour(prob)
+    else:
+        sys.exit(1)
+
+    for char in sys.argv[3]:
+        if char == '1':
+            tour = modifications(prob, tour, heuristic=modify_node_insertion)
+        elif char == '2':
+            tour = modifications(prob, tour, heuristic=modify_2opt)
     length = prob.length(tour)
     print("Tour: %r\nLength: %d" % (tour, length))
